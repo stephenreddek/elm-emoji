@@ -1,4 +1,4 @@
-module Emoji.Internal.NewParse exposing (charInRange, chompCharInRange, emoji, emojiCodePoints, emojiWithText, emojiWithTextStep, exactlyChar, exactlyThenRange, fitzpatrickModifier, flagEmoji, flagPart, greatBritainEmoji, isCharInRange, keyCapEmoji, optional, parse, simpleEmoji, simpleEmojiWithOptionals, string, surrogatePair, toCodePointHex, variationSelector, variationSelectorEmoji, zeroWidthJoinerEmoji)
+module Emoji.Internal.NewParse exposing (charInRange, chompCharInRange, emoji, emojiCodePoints, emojiWithText, emojiWithTextStep, exactlyChar, fitzpatrickModifier, flagEmoji, flagPart, greatBritainEmoji, isCharInRange, keyCapEmoji, optional, parse, simpleEmoji, simpleEmojiWithOptionals, surrogatePair, toCodePointHex, variationSelector, variationSelectorEmoji, zeroWidthJoinerEmoji)
 
 import Bitwise
 import Dict
@@ -49,7 +49,7 @@ emojiWithTextStep revChunks =
 
 toCodePointHex : String -> List String
 toCodePointHex =
-    String.foldr (\char acc -> (String.padLeft 4 '0' <| Hex.toString <| Char.toCode char) :: acc) []
+    String.foldr (\char acc -> (Hex.toString <| Char.toCode char) :: acc) []
 
 
 emoji : Parser Chunk
@@ -72,7 +72,7 @@ emojiCodePoints =
 variationSelectorEmoji : Parser String
 variationSelectorEmoji =
     Parser.succeed (\codePoints variationPoints -> codePoints ++ variationPoints)
-        |= (getChompedOfLength 1 <|
+        |= (Parser.getChompedString <|
                 -- '\u00a9' // trademark
                 -- '\u00ae' // copyright
                 -- '\u3030' // 〰
@@ -121,9 +121,9 @@ simpleEmoji =
         , Parser.backtrackable (charInRange ( '㈀', '\u{32FF}' )) -- \u3200-\u32ff
         , Parser.backtrackable flagEmoji
         , Parser.backtrackable greatBritainEmoji
-        , Parser.backtrackable (exactlyThenRange '\u{D83C}' ( '\u{DC04}', '\u{DC04}' )) -- \ud83c[\udc04-\udc04]
-        , Parser.backtrackable (exactlyThenRange '\u{D83D}' ( '\u{DC00}', '\u{DFFF}' )) -- \ud83d[\udc00-\udfff]
-        , Parser.backtrackable (exactlyThenRange '\u{D83E}' ( '\u{DC00}', '\u{DFFF}' )) -- \ud83e[\udc00-\udfff]
+        , Parser.backtrackable (charInRange ( combineIntoSurrogate 0xD83C 0xDC04, combineIntoSurrogate 0xD83C 0xDC04 )) -- \ud83c[\udc04-\udc04]
+        , Parser.backtrackable (charInRange ( combineIntoSurrogate 0xD83D 0xDC00, combineIntoSurrogate 0xD83D 0xDFFF )) -- \ud83d[\udc00-\udfff]
+        , Parser.backtrackable (charInRange ( combineIntoSurrogate 0xD83E 0xDC00, combineIntoSurrogate 0xD83E 0xDFFF )) -- \ud83e[\udc00-\udfff]
         ]
 
 
@@ -138,25 +138,29 @@ flagPart : Parser String
 flagPart =
     -- \ud83c
     -- \udde6-\uddff
-    exactlyThenRange '\u{D83C}' ( '\u{DDE6}', '\u{DDFF}' )
+    charInRange ( combineIntoSurrogate 0xD83C 0xDDE6, combineIntoSurrogate 0xD83C 0xDDFF )
 
 
 greatBritainEmoji : Parser String
 greatBritainEmoji =
     Parser.succeed (\simpleCodePoints variationPoints zeroWidthPoints -> simpleCodePoints ++ variationPoints ++ zeroWidthPoints)
         -- \ud83c\udff4\udb40\udc67\udb40\udc62
-        |= string "\u{D83C}\u{DFF4}\u{DB40}\u{DC67}\u{DB40}\u{DC62}"
+        |= surrogateString [ combineIntoSurrogate 0xD83C 0xDFF4, combineIntoSurrogate 0xDB40 0xDC67, combineIntoSurrogate 0xDB40 0xDC62 ]
         |= Parser.oneOf
-            [ Parser.backtrackable (string "\u{DB40}\u{DC77}\u{DB40}\u{DC6C}\u{DB40}\u{DC73}") --\udb40\udc77\udb40\udc6c\udb40\udc73
-            , Parser.backtrackable (string "\u{DB40}\u{DC73}\u{DB40}\u{DC63}\u{DB40}\u{DC74}") --\udb40\udc73\udb40\udc63\udb40\udc74
-            , Parser.backtrackable (string "\u{DB40}\u{DC65}\u{DB40}\u{DC6E}\u{DB40}\u{DC67}") --\udb40\udc65\udb40\udc6e\udb40\udc67
+            [ Parser.backtrackable (surrogateString [ combineIntoSurrogate 0xDB40 0xDC77, combineIntoSurrogate 0xDB40 0xDC6C, combineIntoSurrogate 0xDB40 0xDC73 ]) --\udb40\udc77\udb40\udc6c\udb40\udc73]
+            , Parser.backtrackable (surrogateString [ combineIntoSurrogate 0xDB40 0xDC73, combineIntoSurrogate 0xDB40 0xDC63, combineIntoSurrogate 0xDB40 0xDC74 ]) --\udb40\udc73\udb40\udc63\udb40\udc74]
+            , Parser.backtrackable (surrogateString [ combineIntoSurrogate 0xDB40 0xDC65, combineIntoSurrogate 0xDB40 0xDC6E, combineIntoSurrogate 0xDB40 0xDC67 ]) --\udb40\udc65\udb40\udc6e\udb40\udc67]
             ]
         -- \udb40\udc7f
-        |= string "\u{DB40}\u{DC7F}"
+        |= surrogateString [ combineIntoSurrogate 0xDB40 0xDC7F ]
 
 
-string : String -> Parser String
-string sequence =
+surrogateString : List Char -> Parser String
+surrogateString sequenceParts =
+    let
+        sequence =
+            String.fromList sequenceParts
+    in
     Parser.map (always sequence) (Parser.token sequence)
 
 
@@ -164,7 +168,7 @@ keyCapEmoji : Parser String
 keyCapEmoji =
     let
         keyCap =
-            getChompedOfLength 1 <|
+            Parser.getChompedString <|
                 -- 0-9, #, *
                 Parser.chompIf (\c -> (c >= '0' && c <= '9') || c == '#' || c == '*')
     in
@@ -179,7 +183,7 @@ fitzpatrickModifier : Parser String
 fitzpatrickModifier =
     --\ud83c
     --\udffb-\udfff
-    exactlyThenRange '\u{D83C}' ( '\u{DFFB}', '\u{DFFF}' )
+    charInRange ( combineIntoSurrogate 0xD83C 0xDFFB, combineIntoSurrogate 0xD83C 0xDFFF )
 
 
 variationSelector : Parser String
@@ -191,12 +195,13 @@ variationSelector =
 surrogatePair : Parser String
 surrogatePair =
     --TODO: Ensure this doesn't parse if its not a surrogate pair
-    getChompedOfLength 2 <|
-        Parser.succeed ()
-            --\uD800-\uDBFF
-            |. chompCharInRange ( '\u{D800}', '\u{DBFF}' )
-            --\uDC00-\uDFFF
-            |. chompCharInRange ( '\u{DC00}', '\u{DFFF}' )
+    Parser.getChompedString <|
+        --\uD800-\uDBFF (first half)
+        --\uDC00-\uDFFF (second half)
+        chompCharInRange
+            ( combineIntoSurrogate 0xD800 0xDC00
+            , combineIntoSurrogate 0xDBFF 0xDFFF
+            )
 
 
 optional : Parser a -> a -> Parser a
@@ -214,7 +219,7 @@ isCharInRange ( low, high ) toTest =
 
 charInRange : ( Char, Char ) -> Parser String
 charInRange range =
-    getChompedOfLength 1 (chompCharInRange range)
+    Parser.getChompedString (chompCharInRange range)
 
 
 chompCharInRange : ( Char, Char ) -> Parser ()
@@ -224,40 +229,12 @@ chompCharInRange range =
 
 exactlyChar : Char -> Parser String
 exactlyChar exact =
-    getChompedOfLength 1 <|
+    Parser.getChompedString <|
         Parser.succeed ()
             |. Parser.chompIf ((==) exact)
 
 
-exactlyThenRange : Char -> ( Char, Char ) -> Parser String
-exactlyThenRange exact range =
-    getChompedOfLength 2 <|
-        Parser.succeed ()
-            |. Parser.chompIf ((==) exact)
-            |. chompCharInRange range
-
-
-getChompedOfLength : Int -> Parser a -> Parser String
-getChompedOfLength length parser =
-    parser
-        |> Parser.getChompedString
-        |> Parser.andThen
-            (\result ->
-                if String.length result /= length then
-                    Parser.problem "Not the correct length"
-
-                else
-                    Parser.succeed result
-            )
-
-
-combineIntoSurrogate : Char -> Char -> Char
-combineIntoSurrogate first second =
-    let
-        left =
-            Bitwise.shiftLeftBy 8 (Char.toCode first)
-
-        right =
-            Char.toCode second
-    in
-    Char.fromCode (left + right)
+combineIntoSurrogate : Int -> Int -> Char
+combineIntoSurrogate high low =
+    -- https://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
+    Char.fromCode ((high - 0xD800) * 0x0400 + low - 0xDC00 + 0x00010000)

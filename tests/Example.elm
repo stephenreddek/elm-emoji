@@ -4,6 +4,7 @@ import Emoji.Internal.NewParse
 import Emoji.Internal.Parse exposing (..)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
+import Parser
 import Test exposing (..)
 
 
@@ -26,4 +27,10 @@ suite =
         , test "Parses ‼" <|
             \_ ->
                 Expect.equal (Emoji.Internal.NewParse.parse "‼") (parse "‼")
+        , test "Parses 7️⃣" <|
+            \_ ->
+                Expect.equal (Emoji.Internal.NewParse.parse "7️⃣") (parse "7️⃣")
+        , test "Parses 🔟" <|
+            \_ ->
+                Expect.equal (Emoji.Internal.NewParse.parse "🔟") (parse "🔟")
         ]
