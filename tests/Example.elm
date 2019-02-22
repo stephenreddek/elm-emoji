@@ -33,4 +33,10 @@ suite =
         , test "Parses 🔟" <|
             \_ ->
                 Expect.equal (Emoji.Internal.NewParse.parse "🔟") (parse "🔟")
+        , test "Parses 👩\u{200D}❤️\u{200D}💋\u{200D}👩" <|
+            \_ ->
+                Expect.equal (Emoji.Internal.NewParse.parse "👩\u{200D}❤️\u{200D}💋\u{200D}👩") (parse "👩\u{200D}❤️\u{200D}💋\u{200D}👩")
+        , test "Parses text with 🖖" <|
+            \_ ->
+                Expect.equal (Emoji.Internal.NewParse.parse "beginning 🖖 ending") (parse "beginning 🖖 ending")
         ]

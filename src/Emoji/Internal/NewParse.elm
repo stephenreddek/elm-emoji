@@ -17,8 +17,7 @@ import String
 parse : String -> String_
 parse text =
     text
-        |> Parser.run emoji
-        |> Result.map List.singleton
+        |> Parser.run emojiWithText
         |> Result.mapError (Debug.log "err")
         |> Result.withDefault [ StringChunk text ]
         |> String_
@@ -34,16 +33,41 @@ emojiWithTextStep revChunks =
     let
         addChunk =
             -- Can maybe combine string chunks here too
-            Parser.map (\chunk -> Loop (chunk :: revChunks))
+            Parser.backtrackable >> Parser.map (\chunk -> Loop (chunk :: revChunks))
+
+        combineStrings : Chunk -> ( Maybe Chunk, List Chunk ) -> ( Maybe Chunk, List Chunk )
+        combineStrings cur ( last, acc ) =
+            case ( cur, last ) of
+                ( CodeChunk _, Just chunk ) ->
+                    ( Just cur, chunk :: acc )
+
+                ( CodeChunk _, Nothing ) ->
+                    ( Just cur, acc )
+
+                ( StringChunk currString, Just (StringChunk accStrings) ) ->
+                    ( Just (StringChunk (currString ++ accStrings)), acc )
+
+                ( StringChunk _, Just chunk ) ->
+                    ( Just cur, chunk :: acc )
+
+                ( StringChunk _, Nothing ) ->
+                    ( Just cur, acc )
+
+        addLast ( last, acc ) =
+            case last of
+                Just chunk ->
+                    chunk :: acc
+
+                Nothing ->
+                    acc
     in
     Parser.oneOf
-        [ addChunk (Parser.backtrackable emoji)
+        [ addChunk emoji
         , addChunk (Parser.map StringChunk (charInRange ( '\u{0000}', '힙' ))) --\u0000-\uD799
         , addChunk (Parser.map StringChunk (charInRange ( '\u{E000}', '\u{FFFF}' ))) --\uE000-\uFFFF
         , addChunk (Parser.map StringChunk surrogatePair)
         , Parser.succeed ()
-            --This is where we can combine
-            |> Parser.map (\_ -> Done (List.reverse revChunks))
+            |> Parser.map (\_ -> Done (List.foldl combineStrings ( Nothing, [] ) revChunks |> addLast))
         ]
 
 
