@@ -1,4 +1,7 @@
-module Emoji exposing (replaceWithEmojiOne, replaceWithTwemoji, textWith, text_)
+module Emoji exposing
+    ( text_
+    , textWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners
+    )
 
 {-| This library is for conveniently supporting
 [emoji](http://unicode.org/emoji/charts/full-emoji-list.html) in Elm
@@ -15,11 +18,12 @@ some extra assumptions about the app, and customizable mapping over emojis.
 
 # Customizable
 
-@docs textWith, replaceWithEmojiOne, replaceWithTwemoji
+@docs textWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners
 
 -}
 
-import Emoji.Internal.Parse exposing (..)
+import Emoji.Internal.NewParse exposing (..)
+import Emoji.Internal.Parse exposing (Chunk(..), String_(..))
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import List
@@ -82,7 +86,7 @@ textWith replacer body =
 replaceWithEmojiOne : List String -> Html a
 replaceWithEmojiOne codepts =
     img
-        [ src <| urlWithBase emojiOneBaseUrl codepts
+        [ src <| urlWithBase emojiOneV4BaseUrl <| removeJoiners codepts
         , class "elm-emoji-img elm-emoji-one"
         ]
         []
@@ -106,14 +110,35 @@ replaceWithTwemoji codepts =
         []
 
 
+{-| EmojiOne file names require the zero-width-joiners and variation selectors to be removed
+-}
+removeJoiners : List String -> List String
+removeJoiners =
+    let
+        isJoiner c =
+            c == "FE0F" || c == "FE0E" || c == "200D"
+    in
+    List.filter (String.toUpper >> isJoiner >> not)
+
+
 urlWithBase : String -> List String -> String
 urlWithBase base codepts =
-    base ++ (List.intersperse "-" codepts |> String.join "") ++ ".png"
+    base ++ String.join "-" codepts ++ ".png"
 
 
-emojiOneBaseUrl : String
-emojiOneBaseUrl =
+emojiOneV2BaseUrl : String
+emojiOneV2BaseUrl =
     "https://cdnjs.cloudflare.com/ajax/libs/emojione/2.2.6/assets/png/"
+
+
+emojiOneV3BaseUrl : String
+emojiOneV3BaseUrl =
+    "https://cdn.jsdelivr.net/emojione/assets/3.1/png/64/"
+
+
+emojiOneV4BaseUrl : String
+emojiOneV4BaseUrl =
+    "https://cdn.jsdelivr.net/emojione/assets/4.5/png/64/"
 
 
 twemojiBaseUrl : String
