@@ -104,7 +104,7 @@ classes `elm-emoji-img` and `elm-emoji-twem`.
 replaceWithTwemoji : List String -> Html a
 replaceWithTwemoji codepts =
     img
-        [ src <| urlWithBase twemojiBaseUrl <| removeVariationSelectors codepts
+        [ src <| urlWithBase twemojiBaseUrl codepts
         , class "elm-emoji-img elm-emoji-twem"
         ]
         []
@@ -121,7 +121,7 @@ removeJoiners =
     List.filter (String.toUpper >> isJoiner >> not)
 
 
-{-| Twemoji file names require the variation selectors to be removed
+{-| EmojioOe file names require the variation selectors to be removed
 -}
 removeVariationSelectors : List String -> List String
 removeVariationSelectors =
