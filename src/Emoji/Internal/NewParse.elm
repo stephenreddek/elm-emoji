@@ -110,11 +110,10 @@ zeroWidthJoinerEmoji : Parser String
 zeroWidthJoinerEmoji =
     let
         joiner =
-            Parser.succeed (\joinerPoints emojiPoints selectorPoints -> joinerPoints ++ emojiPoints ++ selectorPoints)
+            Parser.succeed (\joinerPoints emojiPoints -> joinerPoints ++ emojiPoints)
                 -- '\u200d'
                 |= exactlyChar '\u{200D}'
-                |= simpleEmoji
-                |= optional variationSelector ""
+                |= simpleEmojiWithOptionals
 
         --TODO: implement this
         upToTwoMoreJoiners =
@@ -122,9 +121,8 @@ zeroWidthJoinerEmoji =
                 |= optional joiner ""
                 |= optional joiner ""
     in
-    Parser.succeed (\simpleCodePoints variationPoints zeroWidthPoints moreJoiners -> simpleCodePoints ++ variationPoints ++ zeroWidthPoints ++ moreJoiners)
-        |= simpleEmoji
-        |= optional variationSelector ""
+    Parser.succeed (\simpleCodePoints zeroWidthPoints moreJoiners -> simpleCodePoints ++ zeroWidthPoints ++ moreJoiners)
+        |= simpleEmojiWithOptionals
         |= joiner
         |= upToTwoMoreJoiners
 
@@ -145,7 +143,7 @@ simpleEmoji =
         , Parser.backtrackable (charInRange ( '㈀', '\u{32FF}' )) -- \u3200-\u32ff
         , Parser.backtrackable flagEmoji
         , Parser.backtrackable greatBritainEmoji
-        , Parser.backtrackable (charInRange ( combineIntoSurrogate 0xD83C 0xDC04, combineIntoSurrogate 0xD83C 0xDC04 )) -- \ud83c[\udc04-\udc04]
+        , Parser.backtrackable (charInRange ( combineIntoSurrogate 0xD83C 0xDC04, combineIntoSurrogate 0xD83C 0xDFFF )) -- \ud83c[\udc04-\udc04]
         , Parser.backtrackable (charInRange ( combineIntoSurrogate 0xD83D 0xDC00, combineIntoSurrogate 0xD83D 0xDFFF )) -- \ud83d[\udc00-\udfff]
         , Parser.backtrackable (charInRange ( combineIntoSurrogate 0xD83E 0xDC00, combineIntoSurrogate 0xD83E 0xDFFF )) -- \ud83e[\udc00-\udfff]
         ]
