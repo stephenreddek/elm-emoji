@@ -18,7 +18,7 @@ some extra assumptions about the app, and customizable mapping over emojis.
 
 # Customizable
 
-@docs textWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners
+@docs textWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners, removeVariationSelectors
 
 -}
 
@@ -86,7 +86,7 @@ textWith replacer body =
 replaceWithEmojiOne : List String -> Html a
 replaceWithEmojiOne codepts =
     img
-        [ src <| urlWithBase emojiOneV4BaseUrl <| removeJoiners codepts
+        [ src <| urlWithBase emojiOneV4BaseUrl <| removeVariationSelectors <| removeJoiners codepts
         , class "elm-emoji-img elm-emoji-one"
         ]
         []
@@ -104,7 +104,7 @@ classes `elm-emoji-img` and `elm-emoji-twem`.
 replaceWithTwemoji : List String -> Html a
 replaceWithTwemoji codepts =
     img
-        [ src <| urlWithBase twemojiBaseUrl codepts
+        [ src <| urlWithBase twemojiBaseUrl <| removeVariationSelectors codepts
         , class "elm-emoji-img elm-emoji-twem"
         ]
         []
@@ -116,7 +116,18 @@ removeJoiners : List String -> List String
 removeJoiners =
     let
         isJoiner c =
-            c == "FE0F" || c == "FE0E" || c == "200D"
+            c == "200D"
+    in
+    List.filter (String.toUpper >> isJoiner >> not)
+
+
+{-| Twemoji file names require the variation selectors to be removed
+-}
+removeVariationSelectors : List String -> List String
+removeVariationSelectors =
+    let
+        isJoiner c =
+            c == "FE0F" || c == "FE0E"
     in
     List.filter (String.toUpper >> isJoiner >> not)
 
