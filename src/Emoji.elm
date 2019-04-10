@@ -22,8 +22,7 @@ some extra assumptions about the app, and customizable mapping over emojis.
 
 -}
 
-import Emoji.Internal.NewParse exposing (..)
-import Emoji.Internal.Parse exposing (Chunk(..), String_(..))
+import Emoji.Internal.Parse exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import List
@@ -126,10 +125,10 @@ removeJoiners =
 removeVariationSelectors : List String -> List String
 removeVariationSelectors =
     let
-        isJoiner c =
+        isSelector c =
             c == "FE0F" || c == "FE0E"
     in
-    List.filter (String.toUpper >> isJoiner >> not)
+    List.filter (String.toUpper >> isSelector >> not)
 
 
 urlWithBase : String -> List String -> String
