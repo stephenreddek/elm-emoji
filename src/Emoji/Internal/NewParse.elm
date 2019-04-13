@@ -18,7 +18,6 @@ parse : String -> String_
 parse text =
     text
         |> Parser.run emojiWithText
-        |> Result.mapError (Debug.log "err")
         |> Result.withDefault [ StringChunk text ]
         |> String_
 
