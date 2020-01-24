@@ -1,6 +1,7 @@
 module Example exposing (suite)
 
-import Emoji.Internal.NewParse
+import Emoji.Internal.DictParse
+import Emoji.Internal.NoBacktrack
 import Emoji.Internal.Parse exposing (..)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
@@ -12,14 +13,14 @@ testNewAgainstOld : String -> Test
 testNewAgainstOld testText =
     test ("New Parser parses \"" ++ testText ++ "\" the same as the old parser") <|
         \_ ->
-            Expect.equal (Emoji.Internal.NewParse.parse testText) (Emoji.Internal.Parse.parse testText)
+            Expect.equal (Emoji.Internal.DictParse.parse testText) (Emoji.Internal.Parse.parse testText)
 
 
 testNewAgainstExpected : String -> String_ -> Test
 testNewAgainstExpected testText expected =
     test ("New Parser correctly parses \"" ++ testText ++ "\"") <|
         \_ ->
-            Expect.equal expected (Emoji.Internal.NewParse.parse testText)
+            Expect.equal expected (Emoji.Internal.DictParse.parse testText)
 
 
 testOldAgainstExpected : String -> String_ -> Test
@@ -54,3 +55,7 @@ suite =
             ++ testBothAgainstExpected "🖖" (String_ [ CodeChunk [ "1f596" ] ])
             ++ testBothAgainstExpected "Iñtërnâtiônàlizætiøn☃💩" (String_ [ StringChunk "Iñtërnâtiônàlizætiøn", CodeChunk [ "2603" ], CodeChunk [ "1f4a9" ] ])
             ++ testBothAgainstExpected "🏊" (String_ [ CodeChunk [ "1f3ca" ] ])
+            ++ testBothAgainstExpected "🇬🇪" (String_ [ CodeChunk [ "1f1ec", "1f1ea" ] ])
+            ++ testBothAgainstExpected "🇺🇸" (String_ [ CodeChunk [ "1f1fa", "1f1f8" ] ])
+            ++ testBothAgainstExpected "🇬🇧" (String_ [ CodeChunk [ "1f1ec", "1f1e7" ] ])
+            ++ testBothAgainstExpected "\u{1F93D}\u{200D}♀️" (String_ [ CodeChunk [ "1f93d", "200d", "2640", "fe0f" ] ])

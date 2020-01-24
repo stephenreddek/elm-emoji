@@ -1,4 +1,4 @@
-module Emoji.Internal.Valid exposing (Store(..), longest, store)
+module Emoji.Internal.Valid exposing (Store(..), longest, store, pairs)
 
 import Dict
 import String
