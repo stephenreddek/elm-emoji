@@ -1,6 +1,7 @@
 module Emoji exposing
     ( text_
     , textWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners
+    , fromEmoji, fromEmojiWith
     )
 
 {-| This library is for conveniently supporting
@@ -13,16 +14,17 @@ some extra assumptions about the app, and customizable mapping over emojis.
 
 # The high level
 
-@docs text_
+@docs text_, fromEmoji
 
 
 # Customizable
 
-@docs textWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners, removeVariationSelectors
+@docs textWith, fromEmojiWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners, removeVariationSelectors
 
 -}
 
 import Emoji.Internal.Parse exposing (..)
+import Emoji.Internal.Valid
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import List
@@ -72,6 +74,28 @@ textWith replacer body =
                     replacer codepts
         )
         chunks
+
+
+fromEmoji : String -> Maybe (Html a)
+fromEmoji =
+    fromEmojiWith replaceWithEmojiOne
+
+
+fromEmojiWith : (List String -> Html a) -> String -> Maybe (Html a)
+fromEmojiWith replacer emoji =
+    case Emoji.Internal.Parse.splitPrefix emoji of
+        ( ( 0, _ ), _ ) ->
+            Nothing
+
+        ( ( matchLen, matchCodes ), remaining ) ->
+            if String.length remaining > 0 then
+            --What to do with remaining?
+            --We could say that it doesn't match at all if it isn't a complete match and return Nothing
+            --That strategy doesn't work, however, with this at the end "♂️" but only with "♂" I believe the difference
+            -- is the emoji selector and I don't want that to be the issue... perhaps leave it for now.
+                Nothing
+            else
+                Just (replacer matchCodes)
 
 
 {-| Turn an emoji unicode sequence into an `<img>` pointing at

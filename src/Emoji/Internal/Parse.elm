@@ -1,4 +1,4 @@
-module Emoji.Internal.Parse exposing (Chunk(..), String_(..), parse)
+module Emoji.Internal.Parse exposing (Chunk(..), String_(..), parse, splitPrefix)
 
 import Dict
 import Emoji.Internal.Valid exposing (Store(..), longest, store)
