@@ -6,3 +6,4 @@ repl-temp-*
 benchmarks/index.html
 generated_valid.elm
 emoji.json
+node_modules/
