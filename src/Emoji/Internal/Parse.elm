@@ -35,7 +35,7 @@ parse_ buf accum string =
 
         _ ->
             case splitPrefix string of
-                ( ( 0, _ ), _ ) ->
+                ( ( 0, _, _ ), _ ) ->
                     case String.uncons string of
                         Nothing ->
                             accum
@@ -70,10 +70,10 @@ dropLeft n string =
 splitPrefix : String -> ( ( Int, List String, String ), String )
 splitPrefix string =
     let
-        ( len, code ) =
-            findPrefix ( 0, [] ) 0 string store
+        ( len, code, shortname ) =
+            findPrefix ( 0, [], "" ) 0 string store
     in
-    ( ( len, code )
+    ( ( len, code, shortname )
     , dropLeft len string
     )
 
