@@ -92,7 +92,8 @@ fromEmojiWith replacer emoji =
                 --We could say that it doesn't match at all if it isn't a complete match and return Nothing
                 --That strategy doesn't work, however, with this at the end "♂️" but only with "♂" I believe the difference
                 -- is the emoji selector and I don't want that to be the issue... perhaps leave it for now.
-                Nothing
+                -- Nothing
+                Just (replacer { codepts = matchCodes, shortname = matchShortName })
 
             else
                 Just (replacer { codepts = matchCodes, shortname = matchShortName })
