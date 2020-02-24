@@ -69,8 +69,8 @@ textWith replacer body =
                 StringChunk s ->
                     text s
 
-                CodeChunk emoji ->
-                    replacer emoji
+                CodeChunk ( codepts, shortname ) ->
+                    replacer { codepts = codepts, shortname = shortname }
         )
         chunks
 
@@ -126,9 +126,9 @@ classes `elm-emoji-img` and `elm-emoji-twem`.
 
 -}
 replaceWithTwemoji : { codepts : List String, shortname : String } -> Html a
-replaceWithTwemoji codepts =
+replaceWithTwemoji emoji =
     img
-        [ src <| urlWithBase twemojiBaseUrl codepts
+        [ src <| urlWithBase twemojiBaseUrl emoji.codepts
         , class "elm-emoji-img elm-emoji-twem"
         , title emoji.shortname
         ]
@@ -137,7 +137,7 @@ replaceWithTwemoji codepts =
 
 {-| EmojiOne file names require the zero-width-joiners and variation selectors to be removed
 -}
-removeJoiners : { codepts : List String, shortname : String } -> List String
+removeJoiners : List String -> List String
 removeJoiners =
     let
         isJoiner c =
@@ -148,7 +148,7 @@ removeJoiners =
 
 {-| EmojioOe file names require the variation selectors to be removed
 -}
-removeVariationSelectors : { codepts : List String, shortname : String } -> List String
+removeVariationSelectors : List String -> List String
 removeVariationSelectors =
     let
         isSelector c =
