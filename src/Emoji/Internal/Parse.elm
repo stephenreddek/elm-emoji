@@ -8,7 +8,7 @@ import String
 
 type Chunk
     = StringChunk String
-    | CodeChunk (List String)
+    | CodeChunk ( List String, String )
 
 
 type String_
@@ -43,7 +43,7 @@ parse_ buf accum string =
                         Just ( c, rest ) ->
                             parse_ (String.cons c buf) accum rest
 
-                ( ( matchLen, matchCodes ), remaining ) ->
+                ( ( matchLen, matchCodes, shortname ), remaining ) ->
                     let
                         nextAccum =
                             if buf == "" then
@@ -52,7 +52,7 @@ parse_ buf accum string =
                             else
                                 StringChunk (String.reverse buf) :: accum
                     in
-                    parse_ "" (CodeChunk matchCodes :: nextAccum) remaining
+                    parse_ "" (CodeChunk ( matchCodes, shortname ) :: nextAccum) remaining
 
 
 dropLeft : Int -> String -> String
@@ -67,7 +67,7 @@ dropLeft n string =
             |> Maybe.withDefault string
 
 
-splitPrefix : String -> ( ( Int, List String ), String )
+splitPrefix : String -> ( ( Int, List String, String ), String )
 splitPrefix string =
     let
         ( len, code ) =
@@ -78,7 +78,7 @@ splitPrefix string =
     )
 
 
-findPrefix : ( Int, List String ) -> Int -> String -> Store -> ( Int, List String )
+findPrefix : ( Int, List String, String ) -> Int -> String -> Store -> ( Int, List String, String )
 findPrefix lastFound count string store =
     if count > longest then
         lastFound
@@ -92,7 +92,7 @@ findPrefix lastFound count string store =
                 Maybe.withDefault
                     lastFound
                     (Maybe.map
-                        (\code -> ( count, code ))
+                        (\( code, shortname ) -> ( count, code, shortname ))
                         foundCode
                     )
         in

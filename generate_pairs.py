@@ -20,7 +20,8 @@ for key, value in data_dict.items():
     unicode_replace[unicode_char.encode('utf-8')] = unicode_parts
     formated_parts = ["\"{0}\"".format(part) for part in unicode_parts]
     parts_as_output = ', '.join(formated_parts)
-    lines.append("    , ( \"{0}\", [ {1} ] )\n".format(unicode_char, parts_as_output))
+    shortname = value['shortname']
+    lines.append("    , ( \"{0}\", [ {1} ], \"{2}\" )\n".format(unicode_char, parts_as_output, shortname))
 output_path = './generated_valid.elm'
 file = open(output_path, 'w')
 file.writelines(lines)

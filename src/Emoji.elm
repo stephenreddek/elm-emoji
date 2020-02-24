@@ -1,7 +1,6 @@
 module Emoji exposing
-    ( text_
-    , textWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners
-    , fromEmoji, fromEmojiWith
+    ( text_, fromEmoji
+    , textWith, fromEmojiWith, replaceWithEmojiOne, replaceWithTwemoji, removeJoiners
     )
 
 {-| This library is for conveniently supporting
@@ -58,7 +57,7 @@ Html nodes.
         ( textWith mapEmoji "here's a penguin:🐧" )
 
 -}
-textWith : (List String -> Html a) -> String -> List (Html a)
+textWith : ({ codepts : List String, shortname : String } -> Html a) -> String -> List (Html a)
 textWith replacer body =
     let
         (String_ chunks) =
@@ -70,8 +69,8 @@ textWith replacer body =
                 StringChunk s ->
                     text s
 
-                CodeChunk codepts ->
-                    replacer codepts
+                CodeChunk emoji ->
+                    replacer emoji
         )
         chunks
 
@@ -81,21 +80,22 @@ fromEmoji =
     fromEmojiWith replaceWithEmojiOne
 
 
-fromEmojiWith : (List String -> Html a) -> String -> Maybe (Html a)
+fromEmojiWith : ({ codepts : List String, shortname : String } -> Html a) -> String -> Maybe (Html a)
 fromEmojiWith replacer emoji =
     case Emoji.Internal.Parse.splitPrefix emoji of
-        ( ( 0, _ ), _ ) ->
+        ( ( 0, _, _ ), _ ) ->
             Nothing
 
-        ( ( matchLen, matchCodes ), remaining ) ->
+        ( ( matchLen, matchCodes, matchShortName ), remaining ) ->
             if String.length remaining > 0 then
-            --What to do with remaining?
-            --We could say that it doesn't match at all if it isn't a complete match and return Nothing
-            --That strategy doesn't work, however, with this at the end "♂️" but only with "♂" I believe the difference
-            -- is the emoji selector and I don't want that to be the issue... perhaps leave it for now.
+                --What to do with remaining?
+                --We could say that it doesn't match at all if it isn't a complete match and return Nothing
+                --That strategy doesn't work, however, with this at the end "♂️" but only with "♂" I believe the difference
+                -- is the emoji selector and I don't want that to be the issue... perhaps leave it for now.
                 Nothing
+
             else
-                Just (replacer matchCodes)
+                Just (replacer { codepts = matchCodes, shortname = matchShortName })
 
 
 {-| Turn an emoji unicode sequence into an `<img>` pointing at
@@ -106,11 +106,12 @@ fromEmojiWith replacer emoji =
         textWith replaceWithEmojiOne >> span [ class "elm-emoji" ]
 
 -}
-replaceWithEmojiOne : List String -> Html a
-replaceWithEmojiOne codepts =
+replaceWithEmojiOne : { codepts : List String, shortname : String } -> Html a
+replaceWithEmojiOne emoji =
     img
-        [ src <| urlWithBase emojiOneV4BaseUrl <| removeVariationSelectors <| removeJoiners codepts
+        [ src <| urlWithBase emojiOneV4BaseUrl <| removeVariationSelectors <| removeJoiners emoji.codepts
         , class "elm-emoji-img elm-emoji-one"
+        , title emoji.shortname
         ]
         []
 
@@ -124,18 +125,19 @@ classes `elm-emoji-img` and `elm-emoji-twem`.
         span [] (textWith replaceWithTwemoji body)
 
 -}
-replaceWithTwemoji : List String -> Html a
+replaceWithTwemoji : { codepts : List String, shortname : String } -> Html a
 replaceWithTwemoji codepts =
     img
         [ src <| urlWithBase twemojiBaseUrl codepts
         , class "elm-emoji-img elm-emoji-twem"
+        , title emoji.shortname
         ]
         []
 
 
 {-| EmojiOne file names require the zero-width-joiners and variation selectors to be removed
 -}
-removeJoiners : List String -> List String
+removeJoiners : { codepts : List String, shortname : String } -> List String
 removeJoiners =
     let
         isJoiner c =
@@ -146,7 +148,7 @@ removeJoiners =
 
 {-| EmojioOe file names require the variation selectors to be removed
 -}
-removeVariationSelectors : List String -> List String
+removeVariationSelectors : { codepts : List String, shortname : String } -> List String
 removeVariationSelectors =
     let
         isSelector c =
